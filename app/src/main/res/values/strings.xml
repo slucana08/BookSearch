@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">BookSearch</string>
+
+    <!-- Text to be used in the information boxes -->
+    <string name="title">Title: </string>
+    <string name="by">By: </string>
+    <string name="publisher">Published: </string>
+    <string name="category">Category: </string>
+    <string name="language">Language:   </string>
+    <string name="not_available">Not available</string>
+
+    <!-- Empty messages -->
+    <string name="no_internet">No internet connection</string>
+    <string name="no_book">The book doesn\'t exist</string>
+    <string name="what_seek">What is it that you seek?</string>
+
+    <!-- Search text -->
+    <string name="enter_search">Enter the word to search</string>
+</resources>
