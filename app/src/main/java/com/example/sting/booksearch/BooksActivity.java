@@ -1,6 +1,8 @@
 package com.example.sting.booksearch;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -24,6 +26,9 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Transformation;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,8 +48,15 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
     private String queryToSearch;
     private String finalQuery;
 
+    // Name of key for preferences
+    private static final String BAD_QUERY = "badQuery";
+    private static final String FIRST_LOAD = "firstLoad";
+
     // Determines whether new content should be loaded.
     private boolean isFirstLoad = true;
+
+    // Determines whether a bad query was provided
+    private boolean isBadQuery = false;
 
     // LoaderManager to control the instance of BooksLoader
     LoaderManager loaderManager;
@@ -58,13 +70,46 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
 
     // Views in main layout
     ListView booksListView;
-    TextView emptyTextView;
+    ImageView emptyImageView;
     ProgressBar progressBar;
+
+    // Transformation object that allows picasso to resize image according to size of container
+    // view
+
+    Transformation transformation = new Transformation() {
+        @Override
+        public Bitmap transform(Bitmap source) {
+
+            int targetWidth = emptyImageView.getWidth();
+            int targetHeight = emptyImageView.getHeight();
+
+            Bitmap result = Bitmap.createScaledBitmap(source, targetWidth, targetHeight,
+                    false);
+            if (result != source) {
+                // Same bitmap is returned if sizes are the same
+                source.recycle();
+            }
+            return result;
+        }
+
+        @Override
+        public String key() {
+            return "transformation";
+        }
+    };
+
+    SharedPreferences sharedPrefs;
+    SharedPreferences.Editor editor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_books);
+
+        sharedPrefs = this.getPreferences(Context.MODE_PRIVATE);
+        editor = sharedPrefs.edit();
+
+        if (sharedPrefs.contains(BAD_QUERY)) isBadQuery = sharedPrefs.getBoolean(BAD_QUERY,false);
 
         Log.i("Information", "onCreate() called");
 
@@ -81,7 +126,7 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
         parent.setContentInsetsAbsolute(0, 0);
 
         // Getting TextView to show empty text
-        emptyTextView = findViewById(R.id.empty_text_view);
+        emptyImageView = findViewById(R.id.empty_image_view);
 
         // Getting ProgressBar
         progressBar = findViewById(R.id.progress_bar);
@@ -114,7 +159,7 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
         booksListView = findViewById(R.id.books_list_view);
         adapter = new BooksAdapter(this, new ArrayList<Book>());
         booksListView.setAdapter(adapter);
-        booksListView.setEmptyView(emptyTextView);
+        booksListView.setEmptyView(emptyImageView);
 
         // Initiating Loader
         startLoader();
@@ -153,21 +198,35 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
         if (TextUtils.isEmpty(queryToSearch)) {
             Toast.makeText(BooksActivity.this, getString(R.string.enter_search),
                     Toast.LENGTH_SHORT).show();
-            emptyTextView.setText(getString(R.string.no_book));
+            emptyImageView.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Picasso.with(BooksActivity.this).load(R.drawable.no_results).fit().
+                            centerCrop().into(emptyImageView);
+                }
+            },0);
             searchImageView.setClickable(true);
+
+            // Set to true since it is a bad query
+            isBadQuery = true;
+            editor.putBoolean(BAD_QUERY,isBadQuery).commit();
         } else {
             // Set to true since new content should be loaded
             isFirstLoad = true;
 
-            emptyTextView.setText("");
+            // Set to false since it is not a bad query
+            isBadQuery = false;
+            editor.putBoolean(BAD_QUERY,isBadQuery).commit();
+
+            emptyImageView.setImageResource(0);
             // Show Progress Bar
             progressBar.setVisibility(View.VISIBLE);
 
             // Build finalQuery and restart LoaderManager
             queryToSearch = queryToSearch.replaceAll(" ", "%20");
             finalQuery = URL_TO_USE + queryToSearch + MAX_RESULTS;
-            loaderManager.restartLoader(0, null, BooksActivity.this);
         }
+        loaderManager.restartLoader(0, null, BooksActivity.this);
     }
 
     /**
@@ -182,7 +241,8 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
     @Override
     public Loader<List<Book>> onCreateLoader(int i, Bundle bundle) {
         // Returns a new BooksLoader by passing finalQuery to it
-        return new BooksLoader(BooksActivity.this, finalQuery);
+        if (isBadQuery) return new BooksLoader(BooksActivity.this,null);
+        else return new BooksLoader(BooksActivity.this, finalQuery);
     }
 
     @Override
@@ -191,6 +251,7 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
         // Execute only if new content should be loaded
         if (isFirstLoad) {
             updateUI(books);
+
             // Set new content loading to false
             isFirstLoad = false;
         }
@@ -224,13 +285,30 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
             // Set new data to be displayed
             adapter.clear();
             adapter.addAll(books);
-        } else if (finalQuery == null && books == null) {
+        } else if (finalQuery == null && books == null && !isBadQuery && BooksLoader.bad_Response) {
             // It means that it is the first run so there is no data to be shown
-            emptyTextView.setText(getString(R.string.what_seek));
+            emptyImageView.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Picasso.with(BooksActivity.this).load(R.drawable.start_search).transform(transformation)
+                            .into(emptyImageView);
+                }
+            },0);
         } else {
             // Bad query to perform HTTP request
-            emptyTextView.setText(getString(R.string.no_book));
-            bookSearchEditText.getText().clear();
+            emptyImageView.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Picasso.with(BooksActivity.this).load(R.drawable.no_results).fit().
+                            centerCrop().into(emptyImageView);
+                }
+            },0);
+
+            // Set to true since it is a bad query
+            isBadQuery = true;
+            editor.putBoolean(BAD_QUERY,isBadQuery).commit();
+
+            loaderManager.restartLoader(0, null, BooksActivity.this);
         }
 
         // Once data is shown make Search image clickable again
@@ -241,14 +319,15 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
      * Runs when there is no internet connection while attempting to perform a query
      */
     private void noInternet() {
-        emptyTextView.setText("");
+        emptyImageView.setImageResource(0);
         progressBar.setVisibility(View.VISIBLE);
-        emptyTextView.postDelayed(new Runnable() {
+        emptyImageView.postDelayed(new Runnable() {
             @Override
             public void run() {
-                emptyTextView.setText(getString(R.string.no_internet));
-                searchImageView.setClickable(true);
-                progressBar.setVisibility(View.GONE);
+               Picasso.with(BooksActivity.this).load(R.drawable.no_internet_connection).
+                                fit().centerCrop().into(emptyImageView);
+               searchImageView.setClickable(true);
+               progressBar.setVisibility(View.GONE);
             }
         }, 1000);
     }
@@ -265,4 +344,11 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
         return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Set value to false to it can be restarted next time app is launched
+        isBadQuery = false;
+        editor.putBoolean(BAD_QUERY,isBadQuery).commit();
+    }
 }

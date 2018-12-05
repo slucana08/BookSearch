@@ -27,7 +27,7 @@
             android:layout_weight="1"
             android:background="@android:color/white"
             android:ellipsize="end"
-            android:hint="Enter name of book"
+            android:hint="@string/enter_search"
             android:imeOptions="actionGo"
             android:inputType="text"
             android:maxLines="1"
