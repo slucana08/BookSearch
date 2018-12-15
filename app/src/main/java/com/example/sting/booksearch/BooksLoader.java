@@ -17,8 +17,8 @@ public class BooksLoader extends AsyncTaskLoader<List<Book>> {
 
     private String mURL;
 
-    // Determines whether there was a bad response while performing the HTTP request
-    public static boolean bad_Response = false;
+    // Determines whether there is a good response from the HTTP request
+    public static boolean BAD_RESPONSE = false;
 
     /**
      * Constructor that allows you to instantiate a new {@link BooksLoader}
@@ -46,9 +46,9 @@ public class BooksLoader extends AsyncTaskLoader<List<Book>> {
         // Perform HTTP request if there is a URL provided
         List<Book> books = QueryUtils.fetchBooksData(mURL);
 
-        // If result is null it means HTTP request was unsuccessful
-        if (books == null) bad_Response = true;
-
+        // Set BAD_RESPONSE to true if response from the HTTP request is null
+        if (books == null) BAD_RESPONSE = true;
+        else BAD_RESPONSE = false;
         return books;
     }
 

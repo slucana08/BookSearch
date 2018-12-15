@@ -43,6 +43,16 @@
             android:padding="8dp"
             android:src="@drawable/search_icon" />
 
+        <ImageView
+            android:id="@+id/settings_image_view"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical"
+            android:layout_weight="0"
+            android:foreground="?actionBarItemBackground"
+            android:padding="8dp"
+            android:src="@drawable/filter_icon" />
+
     </LinearLayout>
 
 </RelativeLayout>

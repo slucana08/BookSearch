@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.support.design.widget.TabLayout;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -94,14 +95,17 @@ public class BooksAdapter extends ArrayAdapter<Book> {
 
         // Load up the book's image if there is any
         final ImageView thumbnailImageView = listItemView.findViewById(R.id.thumbnail_image_view);
+
         // Transformation object that allows picasso to resize image according to size of container
         // view
         final Transformation transformation = new Transformation() {
             @Override
             public Bitmap transform(Bitmap source) {
 
-                int targetWidth = thumbnailImageView.getWidth();
-                int targetHeight = thumbnailImageView.getHeight();
+                int targetWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,120,
+                        getContext().getResources().getDisplayMetrics() );
+                int targetHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,180,
+                        getContext().getResources().getDisplayMetrics() );
 
                 Bitmap result = Bitmap.createScaledBitmap(source, targetWidth, targetHeight,
                         false);
@@ -118,19 +122,13 @@ public class BooksAdapter extends ArrayAdapter<Book> {
             }
         };
 
-        // Use postDelayed so that performing the transformation doesn't crash the app
-        thumbnailImageView.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (currentBook.getImageURL() != null) {
-                    Picasso.with(getContext()).load(currentBook.getImageURL()).placeholder(R.drawable.book_icon).
-                            transform(transformation).into(thumbnailImageView);
-                } else {
-                    Picasso.with(getContext()).load(R.drawable.book_icon).transform(transformation).
-                            into(thumbnailImageView);
-                }
-            }
-        }, 0);
+        if (currentBook.getImageURL() != null) {
+            Picasso.with(thumbnailImageView.getContext()).load(currentBook.getImageURL()).placeholder(R.drawable.book_icon).
+                    transform(transformation).into(thumbnailImageView);
+        } else {
+            Picasso.with(thumbnailImageView.getContext()).load(R.drawable.book_icon).transform(transformation).
+                    into(thumbnailImageView);
+        }
 
         return listItemView;
     }
