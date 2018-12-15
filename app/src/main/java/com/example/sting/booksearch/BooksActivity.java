@@ -89,6 +89,9 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
     // Determines whether settingsScrollView is visible or not verifying value in States
     private boolean isSettingsVisible = States.isSettingsShowing;
 
+    // Determines whether pagesRelativeLayout is visible or not verifying value in States
+    private boolean isPagesVisible = States.isPagesShowing;
+
     // LoaderManager to control the instance of BooksLoader
     LoaderManager loaderManager;
 
@@ -315,8 +318,14 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
         booksListView.setAdapter(adapter);
         booksListView.setEmptyView(emptyImageView);
 
+        // Getting bottom bar
+        pagesRelativeLayout = findViewById(R.id.pages_relative_layout);
+        if (isPagesVisible) pagesRelativeLayout.setVisibility(View.VISIBLE);
+        else pagesRelativeLayout.setVisibility(View.GONE);
+
         // Getting buttons and textView in bottom bar
         pageNumberTextView = findViewById(R.id.page_number_text_view);
+        pageNumberTextView.setText(getString(R.string.page) + " " + String.valueOf(pageNumber));
         previousButton = findViewById(R.id.previous_button);
         nextButton = findViewById(R.id.next_button);
         // Moves to next page in the search
@@ -450,6 +459,9 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
 
         // Set to true since it is a bad query
         isBadQuery = true;
+
+        pagesRelativeLayout.setVisibility(View.GONE);
+        isPagesVisible = false;
     }
 
     /**
@@ -595,6 +607,8 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
 
             nextButton.setClickable(true);
             previousButton.setClickable(true);
+            pagesRelativeLayout.setVisibility(View.VISIBLE);
+            isPagesVisible = true;
         } else if (finalQuery == null && books == null && !isBadQuery && !BooksLoader.BAD_RESPONSE) {
             // It means that it is the first run so there is no data to be shown
             Picasso.with(BooksActivity.this).load(R.drawable.search_book).into(emptyImageView);
@@ -602,6 +616,8 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
             nextButton.setClickable(false);
             previousButton.setClickable(false);
             pageNumberTextView.setText(getString(R.string.page));
+            pagesRelativeLayout.setVisibility(View.GONE);
+            isPagesVisible = false;
         } else if (isChangeOfPage && books == null) {
             // Last page in record is already showing and records can move forward
             Toast.makeText(BooksActivity.this, "Last page in record", Toast.LENGTH_SHORT).show();
@@ -620,6 +636,8 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
             States.pageNumber = pageNumber;
             nextButton.setClickable(true);
             previousButton.setClickable(true);
+            pagesRelativeLayout.setVisibility(View.VISIBLE);
+            isPagesVisible = true;
 
             // Restart Loader
             loaderManager.restartLoader(0, null, BooksActivity.this);
@@ -638,6 +656,8 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
 
             nextButton.setClickable(false);
             previousButton.setClickable(false);
+            pagesRelativeLayout.setVisibility(View.GONE);
+            isPagesVisible = false;
             pageNumberTextView.setText(getString(R.string.page));
             resetQueryNumbers();
             loaderManager.restartLoader(0, null, BooksActivity.this);
@@ -683,5 +703,6 @@ public class BooksActivity extends AppCompatActivity implements LoaderManager.Lo
         States.isBadQuery = isBadQuery;
         States.isSettingsShowing = isSettingsVisible;
         States.isAuthorShowing = isAuthorVisible;
+        States.isPagesShowing = isPagesVisible;
     }
 }

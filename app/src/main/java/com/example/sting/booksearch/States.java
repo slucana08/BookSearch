@@ -11,6 +11,7 @@ public class States {
     public static boolean isBadQuery = false;
     public static boolean isSettingsShowing = false;
     public static boolean isAuthorShowing = false;
+    public static boolean isPagesShowing = false;
     public static boolean isChangeOfPage = false;
     public static int pageNumber = 1;
     public static int indexQueried = 0;
